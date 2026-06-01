@@ -1,0 +1,81 @@
+# ---------------------------------------------------------------------------
+# OpenTofu / Terraform
+# ---------------------------------------------------------------------------
+.terraform/
+.terraform.tfstate.lock.info
+
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+*.tfplan
+*.tfplan.*
+
+crash.log
+crash.*.log
+
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Variable files — committed when reviewed to be secret-free
+# (see docs/development/engineering-standards.md). Files that
+# carry secrets MUST use the `*.secret.tfvars` naming convention.
+*.secret.tfvars
+*.secret.auto.tfvars
+*.secret.tfvars.json
+
+*.local.tfvars
+*.local.auto.tfvars
+*.local.tfvars.json
+
+# Note: .terraform.lock.hcl IS committed (supply-chain integrity).
+
+# ---------------------------------------------------------------------------
+# Environment / secrets
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# ---------------------------------------------------------------------------
+# IDE / OS
+# ---------------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------------------------
+# Tooling caches
+# ---------------------------------------------------------------------------
+.pre-commit-cache/
+.tflint.d/
+.trivy-cache/
+.checkov.d/
+
+# ---------------------------------------------------------------------------
+# Claude / local assistants
+# ---------------------------------------------------------------------------
+.claude/
+CLAUDE.local.md
+
+# ---------------------------------------------------------------------------
+# Build / dist
+# ---------------------------------------------------------------------------
+dist/
+build/
+coverage/
+
+# ---------------------------------------------------------------------------
+# Zensical docs microsite
+# ---------------------------------------------------------------------------
+site/
+.venv/
+__pycache__/
