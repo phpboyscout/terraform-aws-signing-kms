@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.1.0](https://gitlab.com/phpboyscout/terraform-aws-signing-kms/-/releases/v0.1.0)
+
+### Features
+
+- **module**: initial release — KMS signing key + GitLab-OIDC signer role
+
+### Bug Fixes
+
+- **module**: add checkov skip directives to KMS key policy
+
 All notable changes to this project are documented in this file.
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
