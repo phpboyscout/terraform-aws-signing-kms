@@ -108,6 +108,9 @@ resource "aws_kms_alias" "this" {
 # ---- KMS key policy ----------------------------------------------------------
 
 data "aws_iam_policy_document" "key_policy" {
+  # checkov:skip=CKV_AWS_356:KMS key policy — `resources = "*"` is implicitly scoped to the single key the policy is attached to (key policies are not identity-based). Matches the pattern in terraform-aws-bootstrap/modules/state-backend.
+  # checkov:skip=CKV_AWS_111:Same as CKV_AWS_356 — `*` in a KMS key policy resolves to this key only, not to write access on arbitrary resources.
+  # checkov:skip=CKV_AWS_109:Same as CKV_AWS_356 — `*` is bounded by the attached key; this statement does not grant permissions-management on any other principal or resource.
   # The account root retains `kms:*`. This is AWS's recommended break-glass
   # provision and is independent of any IAM policy attached to the account.
   # Without it, a misconfigured admin policy could orphan the key.
