@@ -1,7 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "gitlab>phpboyscout/cicd"
   ],
   "schedule": ["before 6am on monday"],
   "timezone": "Europe/London",
@@ -17,22 +18,6 @@
       "automerge": true,
       "automergeType": "pr",
       "platformAutomerge": true
-    }
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "description": "Bump pinned phpboyscout/cicd component versions in .gitlab-ci.yml.",
-      "managerFilePatterns": [
-        "/\\.gitlab-ci\\.yml$/"
-      ],
-      "matchStrings": [
-        "component: gitlab\\.com/phpboyscout/cicd/[\\w-]+@(?<currentValue>v[\\d.]+)"
-      ],
-      "datasourceTemplate": "gitlab-tags",
-      "depNameTemplate": "phpboyscout/cicd",
-      "registryUrlTemplate": "https://gitlab.com",
-      "extractVersionTemplate": "^(?<version>v[\\d.]+)$"
     }
   ]
 }
