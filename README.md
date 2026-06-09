@@ -26,7 +26,7 @@ delegates `KeyAdministrator` to the operator role they minted.
 - One asymmetric KMS key (default `RSA_4096`, `SIGN_VERIFY`) with a
   stable alias and a 30-day deletion window.
 - One IAM role whose trust policy is scoped via `StringLike` to a list
-  of GitLab OIDC `sub` patterns (e.g.
+  of OIDC `sub` patterns (GitLab or GitHub Actions; e.g.
   `project_path:phpboyscout/go-tool-base:ref_type:tag:ref:v*`).
 - A key policy that names four principal classes — account root,
   administrators, automation, signer — and grants each exactly what
@@ -110,6 +110,54 @@ goreleaser:
     - goreleaser release --clean
 ```
 
+### GitHub Actions
+
+The module is forge-agnostic (GitHub `sub` support since v0.1.1): point it
+at the GitHub OIDC provider, set the issuer host, and use GitHub's `sub`
+claim format.
+
+```hcl
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+}
+
+module "signing_kms" {
+  source  = "gitlab.com/phpboyscout/signing-kms/aws"
+  version = "0.1.1"
+
+  name              = "gtb-release-signing-v1"
+  oidc_provider_arn = data.aws_iam_openid_connect_provider.github.arn
+  oidc_issuer_host  = "token.actions.githubusercontent.com"
+
+  ci_subject_filters = [
+    "repo:phpboyscout/go-tool-base:ref:refs/tags/v*",
+  ]
+
+  key_administrator_arns = [/* ... */]
+  automation_role_arn    = data.aws_iam_role.automation.arn
+}
+```
+
+The release workflow federates in with the official action (`aud` defaults
+to `sts.amazonaws.com`, matching `oidc_audience`):
+
+```yaml
+permissions:
+  id-token: write
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.SIGNER_ROLE_ARN }}
+          aws-region: eu-west-2
+          audience: sts.amazonaws.com
+      - run: goreleaser release --clean
+```
+
 ## Design
 
 See [docs/development/specs/2026-06-01-signing-kms-v0.1.md](docs/development/specs/2026-06-01-signing-kms-v0.1.md)
@@ -159,14 +207,14 @@ for the full design record. The headline decisions:
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_automation_role_arn"></a> [automation\_role\_arn](#input\_automation\_role\_arn) | ARN of the IAM role the infra apply pipeline assumes. Granted the KMS permissions needed to *manage* the key resource via Terraform (Describe, Get, List, Tag, Put-policy, schedule deletion). Deliberately NOT granted `kms:Sign` — a compromise of the apply role must not let an attacker mint signatures. | `string` | n/a | yes |
-| <a name="input_ci_subject_filters"></a> [ci\_subject\_filters](#input\_ci\_subject\_filters) | List of GitLab OIDC `sub` claim patterns the role accepts. Wildcards (`*`) are matched with `StringLike`. The canonical scope for a release signer is one tag-pipeline pattern per consuming project, e.g. `project_path:phpboyscout/go-tool-base:ref_type:tag:ref:v*` — that allows tag pipelines for any `v*` ref and rejects MR/branch pipelines entirely. Must be non-empty. | `list(string)` | n/a | yes |
+| <a name="input_ci_subject_filters"></a> [ci\_subject\_filters](#input\_ci\_subject\_filters) | List of OIDC `sub` claim patterns the role accepts (GitLab or GitHub Actions). Wildcards (`*`) are matched with `StringLike`. The canonical scope for a release signer is one tag-pipeline pattern per consuming project — GitLab: `project_path:phpboyscout/go-tool-base:ref_type:tag:ref:v*`; GitHub: `repo:phpboyscout/go-tool-base:ref:refs/tags/v*` — allowing tag pipelines for any `v*` ref while rejecting branch/MR/PR pipelines. Pair with the matching `oidc_issuer_host` and `oidc_provider_arn`. Must be non-empty. | `list(string)` | n/a | yes |
 | <a name="input_deletion_window_in_days"></a> [deletion\_window\_in\_days](#input\_deletion\_window\_in\_days) | Number of days AWS KMS waits between schedule-deletion and actual deletion. Range 7-30. Defaults to the maximum (30) — for a signing key, the longest possible recovery window is the safest default. | `number` | `30` | no |
 | <a name="input_description"></a> [description](#input\_description) | Human-readable description applied to the KMS key. Shown in the AWS console and in CloudTrail events; useful for auditors. Defaults to a generic string referencing the key's purpose. | `string` | `"Release-binary signing key"` | no |
 | <a name="input_key_administrator_arns"></a> [key\_administrator\_arns](#input\_key\_administrator\_arns) | Principal ARNs that may administer the key — schedule deletion, rotate policy, etc. Typically the operator role from `terraform-aws-security-baseline` plus the AWS account root. Used for break-glass; not used in normal operation. The signer role is intentionally NOT an administrator. | `list(string)` | n/a | yes |
 | <a name="input_key_spec"></a> [key\_spec](#input\_key\_spec) | KMS asymmetric key spec. Must be a SIGN\_VERIFY-capable spec. AWS KMS does not expose Ed25519 for asymmetric signing, so RSA\_4096 is the secure default. ECC\_NIST\_P256 / P384 / P521 are accepted for callers that prefer EC signatures, but be aware OpenPGP packet encoding is tightly bound to the algorithm — RSA is the right choice for the go-tool-base / OpenPGP signing workflow this module was built for. | `string` | `"RSA_4096"` | no |
 | <a name="input_name"></a> [name](#input\_name) | Short kebab-case identifier for this signing key. Used to derive the IAM role name (`<name>-signer`) and the KMS alias (`alias/<name>`). Pick something descriptive that survives key rotation — e.g. `gtb-release-signing-v1` rather than `gtb-release-signing`. | `string` | n/a | yes |
 | <a name="input_oidc_audience"></a> [oidc\_audience](#input\_oidc\_audience) | OIDC `aud` claim value the token must carry. The downstream CI job (GitLab `id_tokens:` block, GitHub Actions `audience:` parameter, etc.) declares this audience so the runner gets a token the role accepts. Defaults to `sts.amazonaws.com`, the AWS-side canonical value for `AssumeRoleWithWebIdentity` — also the convention this module's `docs/development/engineering-standards.md` §2 already mandates, and the default `client_id_list` of the sibling `terraform-aws-bootstrap` module's `automation-iam`. IAM OIDC providers reject any JWT whose `aud` isn't on their `client_id_list`, so the two must agree; override only when pairing with a non-standard IAM OIDC provider. | `string` | `"sts.amazonaws.com"` | no |
-| <a name="input_oidc_issuer_host"></a> [oidc\_issuer\_host](#input\_oidc\_issuer\_host) | Hostname of the OIDC issuer, used as the prefix on the `aud` / `sub` condition keys (e.g. `gitlab.com:aud`). Defaults to `gitlab.com`. Override only for self-managed GitLab on a different host. | `string` | `"gitlab.com"` | no |
+| <a name="input_oidc_issuer_host"></a> [oidc\_issuer\_host](#input\_oidc\_issuer\_host) | Hostname of the OIDC issuer, used as the prefix on the `aud` / `sub` condition keys (e.g. `gitlab.com:aud`). Defaults to `gitlab.com`. For GitHub Actions set `token.actions.githubusercontent.com`; for self-managed GitLab, your instance host. | `string` | `"gitlab.com"` | no |
 | <a name="input_oidc_provider_arn"></a> [oidc\_provider\_arn](#input\_oidc\_provider\_arn) | ARN of the IAM OIDC identity provider whose tokens this role trusts. Typically the GitLab OIDC IDP provisioned by `terraform-aws-bootstrap` (output `oidc_provider_arn`). Pass via a `data.aws_iam_openid_connect_provider` lookup so the caller does not hardcode the ARN. | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply to every taggable resource. Merged with `Component = "signing-kms"` per the module-repo convention. Cross-cutting tags (Project, ManagedBy, Repository) come from the consuming stack's provider `default_tags`. | `map(string)` | `{}` | no |
 

@@ -60,7 +60,7 @@ variable "oidc_audience" {
 }
 
 variable "oidc_issuer_host" {
-  description = "Hostname of the OIDC issuer, used as the prefix on the `aud` / `sub` condition keys (e.g. `gitlab.com:aud`). Defaults to `gitlab.com`. Override only for self-managed GitLab on a different host."
+  description = "Hostname of the OIDC issuer, used as the prefix on the `aud` / `sub` condition keys (e.g. `gitlab.com:aud`). Defaults to `gitlab.com`. For GitHub Actions set `token.actions.githubusercontent.com`; for self-managed GitLab, your instance host."
   type        = string
   default     = "gitlab.com"
 
@@ -71,7 +71,7 @@ variable "oidc_issuer_host" {
 }
 
 variable "ci_subject_filters" {
-  description = "List of GitLab OIDC `sub` claim patterns the role accepts. Wildcards (`*`) are matched with `StringLike`. The canonical scope for a release signer is one tag-pipeline pattern per consuming project, e.g. `project_path:phpboyscout/go-tool-base:ref_type:tag:ref:v*` — that allows tag pipelines for any `v*` ref and rejects MR/branch pipelines entirely. Must be non-empty."
+  description = "List of OIDC `sub` claim patterns the role accepts (GitLab or GitHub Actions). Wildcards (`*`) are matched with `StringLike`. The canonical scope for a release signer is one tag-pipeline pattern per consuming project — GitLab: `project_path:phpboyscout/go-tool-base:ref_type:tag:ref:v*`; GitHub: `repo:phpboyscout/go-tool-base:ref:refs/tags/v*` — allowing tag pipelines for any `v*` ref while rejecting branch/MR/PR pipelines. Pair with the matching `oidc_issuer_host` and `oidc_provider_arn`. Must be non-empty."
   type        = list(string)
 
   validation {
@@ -81,9 +81,12 @@ variable "ci_subject_filters" {
 
   validation {
     condition = alltrue([
-      for s in var.ci_subject_filters : can(regex("^project_path:[a-z0-9_./-]+:ref_type:(branch|tag):ref:[^[:space:]]+$", s))
+      for s in var.ci_subject_filters : (
+        can(regex("^project_path:[a-z0-9_./-]+:ref_type:(branch|tag):ref:[^[:space:]]+$", s)) ||
+        can(regex("^repo:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+:[^[:space:]]+$", s))
+      )
     ])
-    error_message = "ci_subject_filters entries must match GitLab's OIDC `sub` format: project_path:<group/repo>:ref_type:(branch|tag):ref:<pattern>."
+    error_message = "ci_subject_filters entries must match GitLab's OIDC `sub` format (project_path:<group/repo>:ref_type:(branch|tag):ref:<pattern>) or GitHub's (repo:<owner>/<repo>:<claim>, e.g. repo:acme/tool:ref:refs/tags/v*)."
   }
 }
 
