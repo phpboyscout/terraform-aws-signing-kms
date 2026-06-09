@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.1.1](https://gitlab.com/phpboyscout/terraform-aws-signing-kms/-/releases/v0.1.1)
+
+### Bug Fixes
+
+- **module**: default oidc_audience to sts.amazonaws.com
+
 ## [v0.1.0](https://gitlab.com/phpboyscout/terraform-aws-signing-kms/-/releases/v0.1.0)
 
 ### Features
