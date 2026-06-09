@@ -54,9 +54,9 @@ variable "oidc_provider_arn" {
 }
 
 variable "oidc_audience" {
-  description = "OIDC `aud` claim value the token must carry. The downstream tool's `.gitlab-ci.yml` declares `id_tokens:` with this audience so the runner gets a token the role accepts. Defaults to `https://gitlab.com`, GitLab.com's well-known audience. Self-managed GitLab installs override this."
+  description = "OIDC `aud` claim value the token must carry. The downstream CI job (GitLab `id_tokens:` block, GitHub Actions `audience:` parameter, etc.) declares this audience so the runner gets a token the role accepts. Defaults to `sts.amazonaws.com`, the AWS-side canonical value for `AssumeRoleWithWebIdentity` — also the convention this module's `docs/development/engineering-standards.md` §2 already mandates, and the default `client_id_list` of the sibling `terraform-aws-bootstrap` module's `automation-iam`. IAM OIDC providers reject any JWT whose `aud` isn't on their `client_id_list`, so the two must agree; override only when pairing with a non-standard IAM OIDC provider."
   type        = string
-  default     = "https://gitlab.com"
+  default     = "sts.amazonaws.com"
 }
 
 variable "oidc_issuer_host" {
