@@ -95,7 +95,10 @@ goreleaser:
     - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
   id_tokens:
     AWS_WEB_IDENTITY_TOKEN:
-      aud: https://gitlab.com
+      # Must equal var.oidc_audience (default: sts.amazonaws.com) AND
+      # be on the IAM OIDC provider's client_id_list. See the
+      # module's docs/development/engineering-standards.md §2.
+      aud: sts.amazonaws.com
   variables:
     AWS_REGION: eu-west-2
     AWS_ROLE_ARN: ${SIGNER_ROLE_ARN}
@@ -162,7 +165,7 @@ for the full design record. The headline decisions:
 | <a name="input_key_administrator_arns"></a> [key\_administrator\_arns](#input\_key\_administrator\_arns) | Principal ARNs that may administer the key — schedule deletion, rotate policy, etc. Typically the operator role from `terraform-aws-security-baseline` plus the AWS account root. Used for break-glass; not used in normal operation. The signer role is intentionally NOT an administrator. | `list(string)` | n/a | yes |
 | <a name="input_key_spec"></a> [key\_spec](#input\_key\_spec) | KMS asymmetric key spec. Must be a SIGN\_VERIFY-capable spec. AWS KMS does not expose Ed25519 for asymmetric signing, so RSA\_4096 is the secure default. ECC\_NIST\_P256 / P384 / P521 are accepted for callers that prefer EC signatures, but be aware OpenPGP packet encoding is tightly bound to the algorithm — RSA is the right choice for the go-tool-base / OpenPGP signing workflow this module was built for. | `string` | `"RSA_4096"` | no |
 | <a name="input_name"></a> [name](#input\_name) | Short kebab-case identifier for this signing key. Used to derive the IAM role name (`<name>-signer`) and the KMS alias (`alias/<name>`). Pick something descriptive that survives key rotation — e.g. `gtb-release-signing-v1` rather than `gtb-release-signing`. | `string` | n/a | yes |
-| <a name="input_oidc_audience"></a> [oidc\_audience](#input\_oidc\_audience) | OIDC `aud` claim value the token must carry. The downstream tool's `.gitlab-ci.yml` declares `id_tokens:` with this audience so the runner gets a token the role accepts. Defaults to `https://gitlab.com`, GitLab.com's well-known audience. Self-managed GitLab installs override this. | `string` | `"https://gitlab.com"` | no |
+| <a name="input_oidc_audience"></a> [oidc\_audience](#input\_oidc\_audience) | OIDC `aud` claim value the token must carry. The downstream CI job (GitLab `id_tokens:` block, GitHub Actions `audience:` parameter, etc.) declares this audience so the runner gets a token the role accepts. Defaults to `sts.amazonaws.com`, the AWS-side canonical value for `AssumeRoleWithWebIdentity` — also the convention this module's `docs/development/engineering-standards.md` §2 already mandates, and the default `client_id_list` of the sibling `terraform-aws-bootstrap` module's `automation-iam`. IAM OIDC providers reject any JWT whose `aud` isn't on their `client_id_list`, so the two must agree; override only when pairing with a non-standard IAM OIDC provider. | `string` | `"sts.amazonaws.com"` | no |
 | <a name="input_oidc_issuer_host"></a> [oidc\_issuer\_host](#input\_oidc\_issuer\_host) | Hostname of the OIDC issuer, used as the prefix on the `aud` / `sub` condition keys (e.g. `gitlab.com:aud`). Defaults to `gitlab.com`. Override only for self-managed GitLab on a different host. | `string` | `"gitlab.com"` | no |
 | <a name="input_oidc_provider_arn"></a> [oidc\_provider\_arn](#input\_oidc\_provider\_arn) | ARN of the IAM OIDC identity provider whose tokens this role trusts. Typically the GitLab OIDC IDP provisioned by `terraform-aws-bootstrap` (output `oidc_provider_arn`). Pass via a `data.aws_iam_openid_connect_provider` lookup so the caller does not hardcode the ARN. | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply to every taggable resource. Merged with `Component = "signing-kms"` per the module-repo convention. Cross-cutting tags (Project, ManagedBy, Repository) come from the consuming stack's provider `default_tags`. | `map(string)` | `{}` | no |
