@@ -112,7 +112,7 @@ goreleaser:
 
 ### GitHub Actions
 
-The module is forge-agnostic (GitHub `sub` support since v0.1.1): point it
+The module is forge-agnostic (GitHub `sub` support since v0.1.2): point it
 at the GitHub OIDC provider, set the issuer host, and use GitHub's `sub`
 claim format.
 
@@ -123,7 +123,7 @@ data "aws_iam_openid_connect_provider" "github" {
 
 module "signing_kms" {
   source  = "gitlab.com/phpboyscout/signing-kms/aws"
-  version = "0.1.1"
+  version = "0.1.2"
 
   name              = "gtb-release-signing-v1"
   oidc_provider_arn = data.aws_iam_openid_connect_provider.github.arn
