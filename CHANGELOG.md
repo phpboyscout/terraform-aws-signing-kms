@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.1.2](https://gitlab.com/phpboyscout/terraform-aws-signing-kms/-/releases/v0.1.2)
+
+### Bug Fixes
+
+- **oidc**: accept GitHub Actions sub claims in ci_subject_filters
+
 ## [v0.1.1](https://gitlab.com/phpboyscout/terraform-aws-signing-kms/-/releases/v0.1.1)
 
 ### Bug Fixes
