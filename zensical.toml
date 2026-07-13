@@ -2,7 +2,7 @@
 site_name = "terraform-aws-signing-kms"
 site_description = "Reusable OpenTofu/Terraform module — AWS KMS asymmetric signing key + GitLab-OIDC signer role for release-binary signing chains."
 site_author = "Matt Cockayne"
-site_url = "https://signing-kms.phpboyscout.uk"
+site_url = "https://aws-signing-kms.iac.phpboyscout.uk"
 copyright = """
 Copyright &copy; 2026 Matt Cockayne
 """
