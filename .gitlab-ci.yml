@@ -67,7 +67,7 @@ include:
       # dir without *.tf files automatically.
       validate_paths: ". examples/minimal"
 
-  - component: gitlab.com/phpboyscout/cicd/zensical-pages@v0.11.1
+  - component: gitlab.com/phpboyscout/cicd/zensical-pages@v0.23.0
     inputs:
       stage: pages
       # zensical.toml + docs/ + requirements-lock.txt all at repo root.
