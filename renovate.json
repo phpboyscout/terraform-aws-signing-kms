@@ -13,6 +13,11 @@
   "dependencyDashboard": true,
   "packageRules": [
     {
+      "description": "Reusable module: keep flexible Terraform provider/module version constraints (do not pin \u2014 consumers choose the version).",
+      "matchManagers": ["terraform"],
+      "rangeStrategy": "replace"
+    },
+    {
       "description": "Auto-merge patch + minor updates if CI is green.",
       "matchUpdateTypes": ["patch", "minor"],
       "automerge": true,
