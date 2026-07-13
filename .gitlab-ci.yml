@@ -91,4 +91,4 @@ include:
   - component: gitlab.com/phpboyscout/cicd/renovate-self@v0.21.1
     inputs:
       stage: renovate
-      repositories: "phpboyscout/terraform-aws-signing-kms"
+      repositories: "phpboyscout/iac/terraform-aws-signing-kms"
