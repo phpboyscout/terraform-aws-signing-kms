@@ -4,7 +4,7 @@
     "config:recommended",
     "gitlab>phpboyscout/cicd"
   ],
-  "schedule": ["before 6am on monday"],
+  "minimumReleaseAge": "3 days",
   "timezone": "Europe/London",
   "labels": ["dependencies"],
   "commitMessagePrefix": "chore(deps):",
