@@ -185,7 +185,7 @@ for the full design record. The headline decisions:
 
 | Name | Version |
 | ---- | ------- |
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.11.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.15.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.0 |
 
 ## Providers
