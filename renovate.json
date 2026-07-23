@@ -1,28 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended",
-    "gitlab>phpboyscout/cicd"
-  ],
-  "minimumReleaseAge": "3 days",
-  "timezone": "Europe/London",
-  "labels": ["dependencies"],
-  "commitMessagePrefix": "chore(deps):",
-  "prHourlyLimit": 4,
-  "rangeStrategy": "pin",
-  "dependencyDashboard": true,
-  "packageRules": [
-    {
-      "description": "Reusable module: keep flexible Terraform provider/module version constraints (do not pin \u2014 consumers choose the version).",
-      "matchManagers": ["terraform"],
-      "rangeStrategy": "replace"
-    },
-    {
-      "description": "Auto-merge patch + minor updates if CI is green.",
-      "matchUpdateTypes": ["patch", "minor"],
-      "automerge": true,
-      "automergeType": "pr",
-      "platformAutomerge": true
-    }
+    "gitlab>phpboyscout/cicd:tofu",
+    "gitlab>phpboyscout/cicd:library"
   ]
 }
