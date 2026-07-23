@@ -88,7 +88,3 @@ include:
   # refs current, via the cicd preset extended in renovate.json. Runs only
   # on the renovate-daily pipeline schedule; the other jobs self-exclude
   # from schedule pipelines.
-  - component: gitlab.com/phpboyscout/cicd/renovate-self@v0.27.0
-    inputs:
-      stage: renovate
-      repositories: "phpboyscout/iac/terraform-aws-signing-kms"
