@@ -31,6 +31,17 @@ signed-update pipeline.
 
 ### D1 — Key spec defaults to `RSA_4096`
 
+> **Superseded in part (2026-07-30).** The premise below — that KMS has no
+> Ed25519 — lapsed at the KMS Edwards-curve GA. `ECC_NIST_EDWARDS25519` is
+> now an accepted `key_spec` and is the **preferred** choice for
+> *artefact* signing keys, whose signatures are minisign and consumed by
+> cargo-binstall / rtb-update. The decision below still holds for the
+> *OpenPGP* path this module was originally built for, though for a
+> different reason than stated: go-crypto's OpenPGP Ed25519 branch
+> requires a concrete private key and cannot be driven by an opaque KMS
+> signer, so OpenPGP signing remains RSA. The default is unchanged. The
+> original text is kept as written — it records the reasoning at the time.
+
 AWS KMS does not expose Ed25519 for asymmetric `SIGN_VERIFY` keys.
 RSA-4096 is the strongest RSA option and matches the consuming repo's
 prep-doc requirement. ECC variants are accepted via the

@@ -15,7 +15,34 @@ variable "description" {
 }
 
 variable "key_spec" {
-  description = "KMS asymmetric key spec. Must be a SIGN_VERIFY-capable spec. AWS KMS does not expose Ed25519 for asymmetric signing, so RSA_4096 is the secure default. ECC_NIST_P256 / P384 / P521 are accepted for callers that prefer EC signatures, but be aware OpenPGP packet encoding is tightly bound to the algorithm — RSA is the right choice for the go-tool-base / OpenPGP signing workflow this module was built for."
+  description = <<-EOT
+    KMS asymmetric key spec. Must be a SIGN_VERIFY-capable spec.
+
+    Pick by what verifies the signature, not by preference:
+
+    - `RSA_4096` (default) — for **OpenPGP** signing, such as a
+      `checksums.txt.sig` consumed by a gtb-derived tool. OpenPGP is
+      RSA-only here for a concrete reason: go-crypto's OpenPGP Ed25519
+      branch requires a concrete private key and offers no crypto.Signer
+      fall-through, so it cannot be driven by an opaque KMS signer at all.
+    - `ECC_NIST_EDWARDS25519` — for **minisign** artefact signing, which
+      is what the Rust consumers (cargo-binstall, rtb-update) speak.
+      Preferred for new artefact-signing keys. The signer hashes the
+      artefact with BLAKE2b-512 and KMS signs the 64-byte digest, so the
+      Sign API's 4096-byte message cap never binds and HSM custody is
+      identical to the RSA key's.
+    - `ECC_NIST_P256` / `P384` / `P521` — accepted for callers with their
+      own envelope format; nothing in this estate uses them.
+
+    Ed25519 IS available for asymmetric signing — earlier versions of this
+    module asserted otherwise, which stopped being true at the KMS
+    Edwards-curve GA.
+
+    WARNING: this value is ForceNew. Changing it on an existing key
+    **destroys and recreates the key**, losing the private half and with it
+    the ability to verify anything it signed. Rotate by minting a new key
+    (see the module's `enable_key_rotation` note), never by editing this.
+  EOT
   type        = string
   default     = "RSA_4096"
 
@@ -24,6 +51,7 @@ variable "key_spec" {
       "RSA_2048",
       "RSA_3072",
       "RSA_4096",
+      "ECC_NIST_EDWARDS25519",
       "ECC_NIST_P256",
       "ECC_NIST_P384",
       "ECC_NIST_P521",
