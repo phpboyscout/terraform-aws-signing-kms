@@ -80,6 +80,12 @@ include:
   # gitlab.com/phpboyscout/signing-kms/aws + version.
   - component: gitlab.com/phpboyscout/cicd/tofu-module-publish@v0.34.0
     inputs:
+      # NOT the component's `.post` default. On a tag every other job
+      # self-excludes, so a `.post` publish would be the pipeline's only
+      # job — and GitLab refuses to create a pipeline made solely of
+      # .pre/.post jobs, so the tag pipeline never existed and the module
+      # silently never published.
+      stage: release
       module_name: signing-kms
       # module_system defaults to "aws".
 
