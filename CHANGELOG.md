@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.2.0](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/releases/v0.2.0)
+
+[Compare to previous version](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/compare/v0.1.2...v0.2.0)
+
+### Features
+
+- accept ECC_NIST_EDWARDS25519 for minisign artefact signing ([bee95fa](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/commit/bee95fa8bc3f779812e38ce4f06f68097dde161c))
+
 ## [v0.1.2](https://gitlab.com/phpboyscout/terraform-aws-signing-kms/-/releases/v0.1.2)
 
 ### Bug Fixes
