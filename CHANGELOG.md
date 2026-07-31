@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.2.1](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/releases/v0.2.1)
+
+[Compare to previous version](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/compare/v0.2.0...v0.2.1)
+
+### Bug Fixes
+
+- **ci**: publish on tag from a real stage, not .post ([3dd9b9f](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/commit/3dd9b9f7ff490f8156342403ca72fc3767c13829))
+
 ## [v0.2.0](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/releases/v0.2.0)
 
 [Compare to previous version](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/compare/v0.1.2...v0.2.0)
