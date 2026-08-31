@@ -6,7 +6,7 @@
 # pinned by the component's image_version default. Renovate keeps the
 # @vX.Y.Z component refs current as cicd cuts new releases.
 #
-# Release flow: releaser-pleaser watches `main` and maintains a release
+# Release flow: colophon watches `main` and maintains a release
 # MR carrying the pending changelog + version bump. Merging the release
 # MR cuts a `vX.Y.Z` tag whose pipeline runs `tofu-module-publish`,
 # which pushes the module to the GitLab module registry under
@@ -17,7 +17,7 @@
 # `tofu validate`. No sub-modules.
 #
 # Required CI variables:
-#   RELEASER_PLEASER_TOKEN — project access token, Maintainer role,
+#   COLOPHON_TOKEN — project access token, Maintainer role,
 #     scopes: api, read_repository, write_repository. Used by the
 #     release-mr job to push CHANGELOG updates and the release tag.
 # ---------------------------------------------------------------------------
@@ -38,9 +38,8 @@ include:
   # creates the tag whose pipeline runs tofu-module-publish below. The
   # wrapper carries the schedule-never guard so it no longer fires on the
   # Renovate schedule.
-  - component: gitlab.com/phpboyscout/cicd/releaser-pleaser@v0.39.4
+  - component: gitlab.com/phpboyscout/cicd/colophon@v0.42.0
     inputs:
-      token: $RELEASER_PLEASER_TOKEN
       branch: main
       stage: release
 
@@ -75,7 +74,7 @@ include:
       # python_lock=requirements-lock.txt, deploy_branch=main) match.
 
   # Publish to the GitLab Terraform Module Registry on each vX.Y.Z tag
-  # that releaser-pleaser cuts. Runs in .post via CI_JOB_TOKEN
+  # that colophon cuts. Runs in .post via CI_JOB_TOKEN
   # (own-project package write); consumers then reference
   # gitlab.com/phpboyscout/signing-kms/aws + version.
   - component: gitlab.com/phpboyscout/cicd/tofu-module-publish@v0.39.4
