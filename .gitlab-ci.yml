@@ -38,7 +38,7 @@ include:
   # creates the tag whose pipeline runs tofu-module-publish below. The
   # wrapper carries the schedule-never guard so it no longer fires on the
   # Renovate schedule.
-  - component: gitlab.com/phpboyscout/cicd/colophon@v0.42.0
+  - component: gitlab.com/phpboyscout/cicd/colophon@v0.42.1
     inputs:
       branch: main
       stage: release
