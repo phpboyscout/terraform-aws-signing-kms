@@ -38,12 +38,12 @@ include:
   # creates the tag whose pipeline runs tofu-module-publish below. The
   # wrapper carries the schedule-never guard so it no longer fires on the
   # Renovate schedule.
-  - component: gitlab.com/phpboyscout/cicd/colophon@v0.43.1
+  - component: gitlab.com/phpboyscout/cicd/colophon@main
     inputs:
       branch: main
       stage: release
 
-  - component: gitlab.com/phpboyscout/cicd/tofu-lint@v0.43.1
+  - component: gitlab.com/phpboyscout/cicd/tofu-lint@main
     inputs:
       stage: lint
       # `.` runs `tofu fmt -recursive` from root (covers everything) and
@@ -52,21 +52,21 @@ include:
       # caught on PR.
       paths: ". examples/minimal"
 
-  - component: gitlab.com/phpboyscout/cicd/tofu-security@v0.43.1
+  - component: gitlab.com/phpboyscout/cicd/tofu-security@main
     inputs:
       stage: security
       # Single path; trivy / checkov walk the tree themselves and
       # gitleaks scans every tracked file regardless.
       paths: "."
 
-  - component: gitlab.com/phpboyscout/cicd/tofu-validate@v0.43.1
+  - component: gitlab.com/phpboyscout/cicd/tofu-validate@main
     inputs:
       stage: test
       # Module root + the example fixture. tofu-validate skips any
       # dir without *.tf files automatically.
       validate_paths: ". examples/minimal"
 
-  - component: gitlab.com/phpboyscout/cicd/zensical-pages@v0.43.1
+  - component: gitlab.com/phpboyscout/cicd/zensical-pages@main
     inputs:
       stage: pages
       # zensical.toml + docs/ + requirements-lock.txt all at repo root.
@@ -77,7 +77,7 @@ include:
   # that colophon cuts. Runs in .post via CI_JOB_TOKEN
   # (own-project package write); consumers then reference
   # gitlab.com/phpboyscout/signing-kms/aws + version.
-  - component: gitlab.com/phpboyscout/cicd/tofu-module-publish@v0.43.1
+  - component: gitlab.com/phpboyscout/cicd/tofu-module-publish@main
     inputs:
       # NOT the component's `.post` default. On a tag every other job
       # self-excludes, so a `.post` publish would be the pipeline's only
