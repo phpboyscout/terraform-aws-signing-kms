@@ -49,8 +49,8 @@ Master spec: `2026-06-01-signing-kms-v0.1.md`.
 
 ## Tooling
 
-- **OpenTofu version** pinned in `.opentofu-version` (currently
-  `1.11.6`). Locally managed via `mise → tenv → tofu`; the mise shim
+- **OpenTofu version** pinned in `.opentofu-version`, which Renovate
+  bumps. Locally managed via `mise → tenv → tofu`; the mise shim
   dir is `~/.local/share/mise/shims`. In non-interactive shells,
   prepend it.
 - **Task runner:** `justfile`.
