@@ -1,5 +1,19 @@
 # Changelog
 
+## [v0.2.2](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/releases/v0.2.2)
+
+[Compare to previous version](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/compare/v0.2.1...v0.2.2)
+
+### Notes
+
+- The declared `required_version` is widened from `~> 1.15.0` to the floor `>= 1.5.0`, the oldest version the module supports. OpenTofu 1.12 and later do not enforce it in a `.tf` file, and Terraform users on any release from 1.5 onward are no longer refused. CI still tests on the OpenTofu release pinned in `.opentofu-version`.
+
+- Releases are announced to the estate's release feed.
+
+### Bug Fixes
+
+- declare required_version as the floor >= 1.5.0 ([d15072c](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/commit/d15072c9a952265ee570c6d8c264c692e39133f0))
+
 ## [v0.2.1](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/releases/v0.2.1)
 
 [Compare to previous version](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/compare/v0.2.0...v0.2.1)
