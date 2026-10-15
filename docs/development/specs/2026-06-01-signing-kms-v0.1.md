@@ -100,6 +100,13 @@ operator with the InfraAdmin role can change the policy by editing the
 spec/module and going through the apply pipeline; direct console
 edits are not part of the supported lifecycle.
 
+> **Revision, 2026-10-15.** `KeyAdministrators` is now an explicit action
+> list without wildcards (Sign, GetPublicKey and PutKeyPolicy absent), and two
+> Deny statements were added: `DenySignExceptSigner` and
+> `DenyPutKeyPolicyExceptAutomation`, each matching on `aws:PrincipalArn`.
+> Policy changes, and recovery, go through the automation role; see
+> "Break-glass" in the README.
+
 ### D5 — No attached IAM policy on the signer role
 
 The role has no managed policy attached and no inline policy. The key

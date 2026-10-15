@@ -12,7 +12,7 @@ default:
 # --- Hygiene -----------------------------------------------------------------
 
 # Run every check that CI runs. Do this before pushing.
-check: fmt-check validate lint security
+check: fmt-check validate test lint security
 
 # Format all .tf / .hcl files in place.
 fmt:
@@ -34,6 +34,11 @@ validate:
         ( cd "$d" && {{TOFU}} init -backend=false -input=false >/dev/null && {{TOFU}} validate )
       fi
     done
+
+# Assert the rendered key policy offline (tests/*.tftest.hcl).
+test:
+    {{TOFU}} init -backend=false -input=false >/dev/null
+    {{TOFU}} test
 
 # Lint every module / example with tflint.
 lint:

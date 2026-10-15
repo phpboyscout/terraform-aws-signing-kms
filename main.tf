@@ -13,15 +13,20 @@
 # The KMS key policy is the single source of permission grants for the key.
 # Four distinct principal classes appear in the policy:
 #
-#   - account root             — break-glass; `kms:*` (matches AWS default
-#                                "Enable IAM" pattern but explicit on the
-#                                root principal, not the whole account)
-#   - key_administrator_arns   — administer the key (Create / Describe /
-#                                Update / Schedule-deletion) but NOT Sign
+#   - account root             — `kms:*`, which also lets IAM policies in
+#                                the account grant use of the key; bounded
+#                                by the two Deny statements below
+#   - key_administrator_arns   — an explicit list of lifecycle actions;
+#                                not Sign, not PutKeyPolicy
 #   - automation_role_arn      — manage the key via Terraform (read +
 #                                tag + update-key-policy) but NOT Sign
 #   - the signer role          — Sign + GetPublicKey + DescribeKey,
 #                                nothing else
+#
+# Two Deny statements bound everything above, whatever any IAM policy says:
+# only the signer role may Sign, and only the automation role may
+# PutKeyPolicy. Recovery is therefore through the automation role; see
+# "Break-glass" in the README.
 #
 # Deliberate omissions: the role has no attached IAM policy. The key
 # policy is sufficient and avoids the audit risk of role-policy /
@@ -39,6 +44,28 @@ locals {
 
   alias_name      = "alias/${var.name}"
   signer_role_arn = aws_iam_role.signer.arn
+
+  # Enumerated rather than wildcarded so the list states exactly what an
+  # administrator can do. Sign, GetPublicKey and PutKeyPolicy are absent.
+  key_administrator_actions = [
+    "kms:DescribeKey",
+    "kms:GetKeyPolicy",
+    "kms:GetKeyRotationStatus",
+    "kms:ListResourceTags",
+    "kms:ListKeyPolicies",
+    "kms:ListGrants",
+    "kms:EnableKey",
+    "kms:DisableKey",
+    "kms:UpdateKeyDescription",
+    "kms:CreateAlias",
+    "kms:UpdateAlias",
+    "kms:DeleteAlias",
+    "kms:TagResource",
+    "kms:UntagResource",
+    "kms:RevokeGrant",
+    "kms:ScheduleKeyDeletion",
+    "kms:CancelKeyDeletion",
+  ]
 }
 
 data "aws_caller_identity" "current" {}
@@ -111,9 +138,9 @@ data "aws_iam_policy_document" "key_policy" {
   # checkov:skip=CKV_AWS_356:KMS key policy — `resources = "*"` is implicitly scoped to the single key the policy is attached to (key policies are not identity-based). Matches the pattern in terraform-aws-bootstrap/modules/state-backend.
   # checkov:skip=CKV_AWS_111:Same as CKV_AWS_356 — `*` in a KMS key policy resolves to this key only, not to write access on arbitrary resources.
   # checkov:skip=CKV_AWS_109:Same as CKV_AWS_356 — `*` is bounded by the attached key; this statement does not grant permissions-management on any other principal or resource.
-  # The account root retains `kms:*`. This is AWS's recommended break-glass
-  # provision and is independent of any IAM policy attached to the account.
-  # Without it, a misconfigured admin policy could orphan the key.
+  # The account root keeps `kms:*`, AWS's default, so the key cannot be
+  # orphaned. That statement also delegates to IAM policies in the account,
+  # which is why the DenySign and DenyPutKeyPolicy statements exist.
   statement {
     sid     = "EnableAccountRoot"
     effect  = "Allow"
@@ -127,31 +154,14 @@ data "aws_iam_policy_document" "key_policy" {
     resources = ["*"]
   }
 
-  # Administrators may change the key's lifecycle (create, describe,
-  # enable/disable, schedule deletion). They may NOT Sign — that is
-  # reserved for the signer role. They may NOT change the key policy
-  # itself (PutKeyPolicy) — that is reserved for the automation role,
-  # whose changes flow through the reviewed Terraform plan/apply gate.
+  # Administrators manage the key's lifecycle. Signing is the signer
+  # role's alone, and key-policy changes flow through the automation role's
+  # reviewed plan/apply.
   statement {
     sid    = "KeyAdministrators"
     effect = "Allow"
 
-    actions = [
-      "kms:Create*",
-      "kms:Describe*",
-      "kms:Enable*",
-      "kms:List*",
-      "kms:Put*",
-      "kms:Update*",
-      "kms:Revoke*",
-      "kms:Disable*",
-      "kms:Get*",
-      "kms:Delete*",
-      "kms:TagResource",
-      "kms:UntagResource",
-      "kms:ScheduleKeyDeletion",
-      "kms:CancelKeyDeletion",
-    ]
+    actions = local.key_administrator_actions
 
     principals {
       type        = "AWS"
@@ -211,5 +221,44 @@ data "aws_iam_policy_document" "key_policy" {
     }
 
     resources = ["*"]
+  }
+
+  # The Denies match on aws:PrincipalArn rather than naming a principal, so
+  # a role deleted and recreated under the same name and path is excepted
+  # again. A Principal element would bind the deleted role's unique ID.
+  statement {
+    sid       = "DenySignExceptSigner"
+    effect    = "Deny"
+    actions   = ["kms:Sign"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "ArnNotEquals"
+      variable = "aws:PrincipalArn"
+      values   = [local.signer_role_arn]
+    }
+  }
+
+  statement {
+    sid       = "DenyPutKeyPolicyExceptAutomation"
+    effect    = "Deny"
+    actions   = ["kms:PutKeyPolicy"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "ArnNotEquals"
+      variable = "aws:PrincipalArn"
+      values   = [var.automation_role_arn]
+    }
   }
 }

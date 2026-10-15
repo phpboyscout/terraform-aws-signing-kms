@@ -95,7 +95,9 @@ change.
 
 - **Key policy structure**: `main.tf` — four principal classes
   (account root, administrators, automation, signer), each granted
-  exactly what it needs. The signer role has no attached IAM policy on
+  exactly what it needs, and two Deny statements reserving Sign for the
+  signer role and PutKeyPolicy for the automation role. Applies must run
+  as the automation role; see "Break-glass" in the README. The signer role has no attached IAM policy on
   purpose; see the design spec.
 - **Why no IAM role policy**: design spec D5. Key policy is the
   single source of truth; avoids drift.

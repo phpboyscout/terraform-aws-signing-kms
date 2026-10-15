@@ -30,8 +30,10 @@ delegates `KeyAdministrator` to the operator role they minted.
   `project_path:phpboyscout/go-tool-base:ref_type:tag:ref:v*`).
 - A key policy that names four principal classes — account root,
   administrators, automation, signer — and grants each exactly what
-  it needs. The signer role has no attached IAM policy; the key policy
-  is the single source of permission grants.
+  it needs, plus two Deny statements: only the signer role may sign,
+  and only the automation role may change the key policy. The signer
+  role has no attached IAM policy; the key policy is the single source
+  of permission grants.
 
 ## What's out of scope
 
@@ -179,11 +181,36 @@ for the full design record. The headline decisions:
   per consuming project; MR and branch pipelines are deliberately
   excluded.
 - **Permission split**: signer (Sign / GetPublicKey / DescribeKey),
-  administrators (everything except Sign and PutKeyPolicy), automation
-  (manage as a Terraform resource — including PutKeyPolicy — but not
-  Sign).
+  administrators (an explicit list of lifecycle actions, without Sign,
+  GetPublicKey or PutKeyPolicy), automation (manage as a Terraform
+  resource — including PutKeyPolicy — but not Sign).
+- **Deny statements**: `DenySignExceptSigner` and
+  `DenyPutKeyPolicyExceptAutomation` deny those two actions to every
+  principal but the named role, whatever any IAM policy in the account
+  allows. They match on `aws:PrincipalArn`, so they hold for the account
+  root too.
 - **No attached IAM policy on the signer role**. The key policy is the
   single source of grants. Avoids key-policy / role-policy drift.
+
+## Break-glass
+
+The account root keeps `kms:*`, so the key can never be orphaned, but the
+two Deny statements bind the root as well. Recovery goes through the
+automation role:
+
+- **Changing the key policy** is done by the automation role, through a
+  reviewed plan and apply. Nobody else can, including the account root.
+- **Applying this module** must therefore run as the automation role. KMS
+  refuses a policy that would stop its caller changing it again, so an
+  apply under any other role fails rather than locking anyone out.
+- **If the automation role is deleted**, recreate it with the same name and
+  path. The Deny statements compare `aws:PrincipalArn` as a string, so the
+  recreated role is excepted again and can apply.
+- **Signing** stays with the signer role. Recreating it under the same name
+  restores signing the same way.
+
+Administrators can still disable the key, cancel or schedule its deletion,
+and manage aliases and tags without going through the automation role.
 
 The `terraform` row under Requirements is a floor: the oldest version the
 module supports, raised by hand only when the module uses a newer feature. The
