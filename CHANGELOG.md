@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.2.3](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/releases/v0.2.3)
+
+[Compare to previous version](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/compare/v0.2.2...v0.2.3)
+
+### Notes
+
+- The key policy now reserves signing for the signer role and key-policy changes for the automation role. Apply this module as the automation role; see "Break-glass" in the README.
+
+### Bug Fixes
+
+- deny signing and key-policy changes to all but their roles ([01ada62](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/commit/01ada62a0c94dc25481a655d193bbd392d7a9f9e))
+
 ## [v0.2.2](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/releases/v0.2.2)
 
 [Compare to previous version](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/compare/v0.2.1...v0.2.2)
