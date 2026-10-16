@@ -31,8 +31,12 @@ variable "key_spec" {
       artefact with BLAKE2b-512 and KMS signs the 64-byte digest, so the
       Sign API's 4096-byte message cap never binds and HSM custody is
       identical to the RSA key's.
-    - `ECC_NIST_P256` / `P384` / `P521` — accepted for callers with their
-      own envelope format; nothing in this estate uses them.
+    - `ECC_NIST_P256` — for **container image** signing in the cosign
+      formats (sigillum spec 0005). P-256 rather than Ed25519 because some
+      image verifiers, such as Argo CD Image Updater, accept ECDSA keys
+      only. Sign with `ECDSA_SHA_256` over a SHA-256 digest.
+    - `ECC_NIST_P384` / `P521` — accepted for callers with their own
+      envelope format; nothing in this estate uses them.
 
     Ed25519 IS available for asymmetric signing — earlier versions of this
     module asserted otherwise, which stopped being true at the KMS
