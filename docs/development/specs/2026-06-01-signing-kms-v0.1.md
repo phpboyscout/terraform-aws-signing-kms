@@ -113,7 +113,9 @@ edits are not part of the supported lifecycle.
 > Deny existed. A fifth class, `var.mint_principal_arns` (default `[]`), gets
 > `MintSign` (Sign, GetPublicKey, DescribeKey) and is excepted from
 > `DenySignExceptSigner`. Two Denies (`DenyMintSignExceptDigest`,
-> `DenyMintSignExceptDigestSha256`) hold it to the one call minting makes. It
+> `DenyMintSignExceptDigestSha256`) hold it to a `DIGEST` with
+> `RSASSA_PKCS1_V1_5_SHA_256`. That is the shape minting needs, and also the
+> release-signing path, so a mint principal can sign anything the signer can. It
 > is permanent and names one human ceremony role, decided in infra spec 0032
 > (D5, D8), which reverses route C's rejection on this repo's issue 4.
 

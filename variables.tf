@@ -150,7 +150,7 @@ variable "automation_role_arn" {
 }
 
 variable "mint_principal_arns" {
-  description = "IAM role ARNs exempted from DenySignExceptSigner so a human can mint the key's OpenPGP identity, whose self-signature needs kms:Sign. Each is granted Sign, GetPublicKey and DescribeKey, and denied Sign except for a DIGEST with RSASSA_PKCS1_V1_5_SHA_256, the one call the mint makes. Meant for one ceremony role whose trust admits a single person (infra spec 0032); RSA keys only."
+  description = "IAM role ARNs exempted from DenySignExceptSigner so a human can mint the key's OpenPGP identity, whose self-signature needs kms:Sign. Each is granted Sign, GetPublicKey and DescribeKey, and denied Sign except for a DIGEST with RSASSA_PKCS1_V1_5_SHA_256. That shape is also the release-signing path, so a mint principal can sign anything the signer role can. Meant for one ceremony role whose trust admits a single person (infra spec 0032); RSA keys only."
   type        = list(string)
   default     = []
   nullable    = false

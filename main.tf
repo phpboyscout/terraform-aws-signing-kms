@@ -11,7 +11,8 @@
 #      per consuming project, so only release-tag pipelines can mint signatures.
 #
 # The KMS key policy is the single source of permission grants for the key.
-# Four distinct principal classes appear in the policy:
+# Four distinct principal classes appear in the policy, and a fifth when
+# mint_principal_arns is set:
 #
 #   - account root             — `kms:*`, which also lets IAM policies in
 #                                the account grant use of the key; bounded
@@ -22,10 +23,12 @@
 #                                tag + update-key-policy) but NOT Sign
 #   - the signer role          — Sign + GetPublicKey + DescribeKey,
 #                                nothing else
+#   - mint_principal_arns      — the same three, held by two more Denies
+#                                to a DIGEST with RSASSA_PKCS1_V1_5_SHA_256
 #
 # Two Deny statements bound everything above, whatever any IAM policy says:
-# only the signer role may Sign, and only the automation role may
-# PutKeyPolicy. Recovery is therefore through the automation role; see
+# only the signer role and the mint principals may Sign, and only the
+# automation role may PutKeyPolicy. Recovery is therefore through the automation role; see
 # "Break-glass" in the README.
 #
 # Deliberate omissions: the role has no attached IAM policy. The key

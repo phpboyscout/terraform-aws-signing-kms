@@ -19,9 +19,12 @@ signing chains where:
 - No long-lived credential can sign: only the CI job whose OIDC `sub`
   claim matches a caller-supplied pattern. The key policy denies signing
   to every other principal, the account root included. The one exception
-  is opt-in: a role named in `mint_principal_arns` may make the single
-  `DIGEST` signature that minting the key's OpenPGP identity needs, and
-  nothing else. Leave it empty and no human can sign.
+  is opt-in, for a human key ceremony: a role named in
+  `mint_principal_arns` may also sign, held to a `DIGEST` with
+  `RSASSA_PKCS1_V1_5_SHA_256`. That is the shape minting the key's
+  OpenPGP identity needs, and it is the release-signing path too, so the
+  role can sign anything the CI signer can. Leave it empty and no human
+  can sign.
 - The apply role that manages the infrastructure cannot sign directly.
   It is the one principal allowed to change the key policy, because
   OpenTofu manages that policy, so a compromise able to act as the apply
