@@ -1,5 +1,21 @@
 # Changelog
 
+## [v0.3.0](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/releases/v0.3.0)
+
+[Compare to previous version](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/compare/v0.2.3...v0.3.0)
+
+### Notes
+
+- New input mint_principal_arns, empty by default, exempts a human key-ceremony role from the signer-only Sign Deny, narrowed to a DIGEST with RSASSA_PKCS1_V1_5_SHA_256. Nothing changes for a caller that leaves it unset.
+
+### Features
+
+- let a named ceremony role mint the key's OpenPGP identity ([6092548](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/commit/6092548a79f9a0aaa9ff384a96e526e29e955a9c))
+
+### Bug Fixes
+
+- stop the README claiming no human can sign, and refuse wildcard mint principals ([f3c0039](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/commit/f3c003999dc5d64ef94602272db1726f0c78608f))
+
 ## [v0.2.3](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/releases/v0.2.3)
 
 [Compare to previous version](https://gitlab.com/phpboyscout/iac/terraform-aws-signing-kms/-/compare/v0.2.2...v0.2.3)
