@@ -16,10 +16,12 @@ from an external OIDC IDP (default: GitLab.com). Built for release-binary
 signing chains where:
 
 - The private key never leaves AWS KMS.
-- No human and no long-lived credential can sign: only the CI job
-  whose OIDC `sub` claim matches a caller-supplied pattern. The key
-  policy denies signing to every other principal, the account root
-  included.
+- No long-lived credential can sign: only the CI job whose OIDC `sub`
+  claim matches a caller-supplied pattern. The key policy denies signing
+  to every other principal, the account root included. The one exception
+  is opt-in: a role named in `mint_principal_arns` may make the single
+  `DIGEST` signature that minting the key's OpenPGP identity needs, and
+  nothing else. Leave it empty and no human can sign.
 - The apply role that manages the infrastructure cannot sign directly.
   It is the one principal allowed to change the key policy, because
   OpenTofu manages that policy, so a compromise able to act as the apply

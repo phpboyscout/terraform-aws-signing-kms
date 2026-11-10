@@ -8,10 +8,12 @@ assumable from an external OIDC IDP (default: GitLab.com). Built for
 release-binary signing chains where:
 
 - The private key never leaves AWS KMS.
-- No human and no long-lived credential can sign: only the CI job
-  whose OIDC `sub` claim matches a caller-supplied pattern. The key
-  policy denies signing to every other principal, the account root
-  included.
+- No long-lived credential can sign: only the CI job whose OIDC `sub`
+  claim matches a caller-supplied pattern. The key policy denies signing
+  to every other principal, the account root included. The one exception
+  is opt-in: a role named in `mint_principal_arns` may make the single
+  `DIGEST` signature that minting the key's OpenPGP identity needs, and
+  nothing else. Leave it empty and no human can sign.
 - The apply role that manages the infrastructure cannot sign directly.
   It is the one principal allowed to change the key policy, because
   OpenTofu manages that policy, so a compromise able to act as the apply
@@ -35,9 +37,10 @@ delegates `KeyAdministrator` to the operator role they minted.
   `project_path:phpboyscout/go-tool-base:ref_type:tag:ref:v*`).
 - A key policy that names four principal classes — account root,
   administrators, automation, signer — and grants each exactly what
-  it needs, plus two Deny statements: only the signer role, and any
-  role named in `mint_principal_arns`, may sign, and only the
-  automation role may change the key policy. The signer
+  it needs, plus two Deny statements: only the signer role may sign,
+  and only the automation role may change the key policy. Naming roles
+  in `mint_principal_arns` adds a fifth class, mint principals, and two
+  more Denies that hold them to the mint's one call. The signer
   role has no attached IAM policy; the key policy is the single source
   of permission grants.
 

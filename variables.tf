@@ -157,9 +157,9 @@ variable "mint_principal_arns" {
 
   validation {
     condition = alltrue([
-      for arn in var.mint_principal_arns : can(regex("^arn:aws[^:]*:iam::[0-9]{12}:role/.+$", arn))
+      for arn in var.mint_principal_arns : can(regex("^arn:aws[^:]*:iam::[0-9]{12}:role/[^*?]+$", arn))
     ])
-    error_message = "mint_principal_arns entries must be IAM role ARNs."
+    error_message = "mint_principal_arns entries must be IAM role ARNs, with no wildcards: role/* would exempt every role in the account."
   }
 }
 

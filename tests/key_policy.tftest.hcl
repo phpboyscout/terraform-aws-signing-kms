@@ -152,3 +152,55 @@ run "mint_principal_may_sign" {
     error_message = "a mint principal must be denied Sign with any algorithm but RSASSA_PKCS1_V1_5_SHA_256"
   }
 }
+
+run "every_mint_principal_is_held_to_the_mint" {
+  command = apply
+
+  variables {
+    mint_principal_arns = [
+      "arn:aws:iam::111111111111:role/pbs-test-key-ceremony",
+      "arn:aws:iam::111111111111:role/pbs-test-key-ceremony-spare",
+    ]
+  }
+
+  assert {
+    condition = toset(flatten([one([
+      for s in jsondecode(data.aws_iam_policy_document.key_policy.json).Statement : s if s.Sid == "MintSign"
+    ]).Principal.AWS])) == toset(var.mint_principal_arns)
+    error_message = "every mint principal must be granted Sign"
+  }
+
+  assert {
+    condition = toset(flatten([one([
+      for s in jsondecode(data.aws_iam_policy_document.key_policy.json).Statement : s if s.Sid == "DenyMintSignExceptDigest"
+    ]).Condition.ArnEquals["aws:PrincipalArn"]])) == toset(var.mint_principal_arns)
+    error_message = "every mint principal must be denied Sign on anything but a DIGEST"
+  }
+
+  assert {
+    condition = toset(flatten([one([
+      for s in jsondecode(data.aws_iam_policy_document.key_policy.json).Statement : s if s.Sid == "DenyMintSignExceptDigestSha256"
+    ]).Condition.ArnEquals["aws:PrincipalArn"]])) == toset(var.mint_principal_arns)
+    error_message = "every mint principal must be denied Sign with any algorithm but RSASSA_PKCS1_V1_5_SHA_256"
+  }
+}
+
+run "wildcard_mint_principal_rejected" {
+  command = plan
+
+  variables {
+    mint_principal_arns = ["arn:aws:iam::111111111111:role/*"]
+  }
+
+  expect_failures = [var.mint_principal_arns]
+}
+
+run "account_root_mint_principal_rejected" {
+  command = plan
+
+  variables {
+    mint_principal_arns = ["arn:aws:iam::111111111111:root"]
+  }
+
+  expect_failures = [var.mint_principal_arns]
+}
