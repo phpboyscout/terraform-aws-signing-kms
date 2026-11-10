@@ -107,6 +107,16 @@ edits are not part of the supported lifecycle.
 > Policy changes, and recovery, go through the automation role; see
 > "Break-glass" in the README.
 
+> **Revision, 2026-11-10.** A cert's self-signature needs `kms:Sign`, so after
+> the Deny no one could mint a key's OpenPGP identity. The dunscaith and
+> phpbotscout mints were refused; colophon's August mint had signed before the
+> Deny existed. A fifth class, `var.mint_principal_arns` (default `[]`), gets
+> `MintSign` (Sign, GetPublicKey, DescribeKey) and is excepted from
+> `DenySignExceptSigner`. Two Denies (`DenyMintSignExceptDigest`,
+> `DenyMintSignExceptDigestSha256`) hold it to the one call minting makes. It
+> is permanent and names one human ceremony role, decided in infra spec 0032
+> (D5, D8), which reverses route C's rejection on this repo's issue 4.
+
 ### D5 — No attached IAM policy on the signer role
 
 The role has no managed policy attached and no inline policy. The key
@@ -158,11 +168,11 @@ convention.
 `name`, `description`, `key_spec`, `deletion_window_in_days`,
 `oidc_provider_arn`, `oidc_audience`, `oidc_issuer_host`,
 `ci_subject_filters`, `key_administrator_arns`, `automation_role_arn`,
-`tags`. Every input has a `description` and a `type`; sensitive inputs
+`mint_principal_arns`, `tags`. Every input has a `description` and a `type`; sensitive inputs
 would be marked but none here are sensitive. Validations on `name`,
 `key_spec`, `deletion_window_in_days`, `oidc_provider_arn`,
 `oidc_issuer_host`, `ci_subject_filters`, `key_administrator_arns`,
-`automation_role_arn` keep malformed input from reaching the apply
+`automation_role_arn`, `mint_principal_arns` keep malformed input from reaching the apply
 phase.
 
 ### Outputs

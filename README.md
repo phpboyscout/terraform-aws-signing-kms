@@ -35,8 +35,9 @@ delegates `KeyAdministrator` to the operator role they minted.
   `project_path:phpboyscout/go-tool-base:ref_type:tag:ref:v*`).
 - A key policy that names four principal classes — account root,
   administrators, automation, signer — and grants each exactly what
-  it needs, plus two Deny statements: only the signer role may sign,
-  and only the automation role may change the key policy. The signer
+  it needs, plus two Deny statements: only the signer role, and any
+  role named in `mint_principal_arns`, may sign, and only the
+  automation role may change the key policy. The signer
   role has no attached IAM policy; the key policy is the single source
   of permission grants.
 
@@ -196,6 +197,14 @@ for the full design record. The headline decisions:
   principal but the named role, whatever any IAM policy in the account
   allows. They match on `aws:PrincipalArn`, so they hold for the account
   root too.
+- **Mint exemption** (`mint_principal_arns`, empty by default): the roles
+  named there are excepted from `DenySignExceptSigner` and allowed `Sign`,
+  but two more Denies hold them to a `DIGEST` with
+  `RSASSA_PKCS1_V1_5_SHA_256`, which is the one call minting makes. The
+  exemption is for a human key ceremony: one role whose trust admits one
+  person, used for minutes at a time. The narrowing lives in Denies
+  because the root's `kms:*` delegates to IAM, so an Allow's conditions
+  could be bypassed by the role's own IAM policy.
 - **No attached IAM policy on the signer role**. The key policy is the
   single source of grants. Avoids key-policy / role-policy drift.
 
@@ -215,6 +224,11 @@ automation role:
   recreated role is excepted again and can apply.
 - **Signing** stays with the signer role. Recreating it under the same name
   restores signing the same way.
+- **Minting the key's OpenPGP identity** signs the cert with the key, so
+  whoever mints needs `kms:Sign`. Name a ceremony role in
+  `mint_principal_arns` and mint through it. Like the other Denies, the
+  exemption matches the role's ARN, so a role recreated under that name is
+  exempted too.
 
 Administrators can still disable the key, cancel or schedule its deletion,
 and manage aliases and tags without going through the automation role.
@@ -257,6 +271,7 @@ and later treat `required_version` as a statement, not a gate
 | <a name="input_description"></a> [description](#input\_description) | Human-readable description applied to the KMS key. Shown in the AWS console and in CloudTrail events; useful for auditors. Defaults to a generic string referencing the key's purpose. | `string` | `"Release-binary signing key"` | no |
 | <a name="input_key_administrator_arns"></a> [key\_administrator\_arns](#input\_key\_administrator\_arns) | Principal ARNs that may administer the key — schedule deletion, rotate policy, etc. Typically the operator role from `terraform-aws-security-baseline` plus the AWS account root. Used for break-glass; not used in normal operation. The signer role is intentionally NOT an administrator. | `list(string)` | n/a | yes |
 | <a name="input_key_spec"></a> [key\_spec](#input\_key\_spec) | KMS asymmetric key spec. Must be a SIGN\_VERIFY-capable spec.<br/><br/>Pick by what verifies the signature, not by preference:<br/><br/>- `RSA_4096` (default) — for **OpenPGP** signing, such as a<br/>  `checksums.txt.sig` consumed by a gtb-derived tool. OpenPGP is<br/>  RSA-only here for a concrete reason: go-crypto's OpenPGP Ed25519<br/>  branch requires a concrete private key and offers no crypto.Signer<br/>  fall-through, so it cannot be driven by an opaque KMS signer at all.<br/>- `ECC_NIST_EDWARDS25519` — for **minisign** artefact signing, which<br/>  is what the Rust consumers (cargo-binstall, rtb-update) speak.<br/>  Preferred for new artefact-signing keys. The signer hashes the<br/>  artefact with BLAKE2b-512 and KMS signs the 64-byte digest, so the<br/>  Sign API's 4096-byte message cap never binds and HSM custody is<br/>  identical to the RSA key's.<br/>- `ECC_NIST_P256` — for **container image** signing in the cosign<br/>  formats (sigillum spec 0005). P-256 rather than Ed25519 because some<br/>  image verifiers, such as Argo CD Image Updater, accept ECDSA keys<br/>  only. Sign with `ECDSA_SHA_256` over a SHA-256 digest.<br/>- `ECC_NIST_P384` / `P521` — accepted for callers with their own<br/>  envelope format; nothing in this estate uses them.<br/><br/>Ed25519 IS available for asymmetric signing — earlier versions of this<br/>module asserted otherwise, which stopped being true at the KMS<br/>Edwards-curve GA.<br/><br/>WARNING: this value is ForceNew. Changing it on an existing key<br/>**destroys and recreates the key**, losing the private half and with it<br/>the ability to verify anything it signed. Rotate by minting a new key<br/>(see the module's `enable_key_rotation` note), never by editing this. | `string` | `"RSA_4096"` | no |
+| <a name="input_mint_principal_arns"></a> [mint\_principal\_arns](#input\_mint\_principal\_arns) | IAM role ARNs exempted from DenySignExceptSigner so a human can mint the key's OpenPGP identity, whose self-signature needs kms:Sign. Each is granted Sign, GetPublicKey and DescribeKey, and denied Sign except for a DIGEST with RSASSA\_PKCS1\_V1\_5\_SHA\_256, the one call the mint makes. Meant for one ceremony role whose trust admits a single person (infra spec 0032); RSA keys only. | `list(string)` | `[]` | no |
 | <a name="input_name"></a> [name](#input\_name) | Short kebab-case identifier for this signing key. Used to derive the IAM role name (`<name>-signer`) and the KMS alias (`alias/<name>`). Pick something descriptive that survives key rotation — e.g. `gtb-release-signing-v1` rather than `gtb-release-signing`. | `string` | n/a | yes |
 | <a name="input_oidc_audience"></a> [oidc\_audience](#input\_oidc\_audience) | OIDC `aud` claim value the token must carry. The downstream CI job (GitLab `id_tokens:` block, GitHub Actions `audience:` parameter, etc.) declares this audience so the runner gets a token the role accepts. Defaults to `sts.amazonaws.com`, the AWS-side canonical value for `AssumeRoleWithWebIdentity` — also the convention this module's `docs/development/engineering-standards.md` §2 already mandates, and the default `client_id_list` of the sibling `terraform-aws-bootstrap` module's `automation-iam`. IAM OIDC providers reject any JWT whose `aud` isn't on their `client_id_list`, so the two must agree; override only when pairing with a non-standard IAM OIDC provider. | `string` | `"sts.amazonaws.com"` | no |
 | <a name="input_oidc_issuer_host"></a> [oidc\_issuer\_host](#input\_oidc\_issuer\_host) | Hostname of the OIDC issuer, used as the prefix on the `aud` / `sub` condition keys (e.g. `gitlab.com:aud`). Defaults to `gitlab.com`. For GitHub Actions set `token.actions.githubusercontent.com`; for self-managed GitLab, your instance host. | `string` | `"gitlab.com"` | no |

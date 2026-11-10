@@ -223,6 +223,86 @@ data "aws_iam_policy_document" "key_policy" {
     resources = ["*"]
   }
 
+  dynamic "statement" {
+    for_each = length(var.mint_principal_arns) > 0 ? [1] : []
+
+    content {
+      sid    = "MintSign"
+      effect = "Allow"
+
+      actions = [
+        "kms:Sign",
+        "kms:GetPublicKey",
+        "kms:DescribeKey",
+      ]
+
+      principals {
+        type        = "AWS"
+        identifiers = var.mint_principal_arns
+      }
+
+      resources = ["*"]
+    }
+  }
+
+  # The mint exemption is narrowed by Denies: EnableAccountRoot delegates to IAM,
+  # so conditions on MintSign could be bypassed by the role's own IAM policy.
+  dynamic "statement" {
+    for_each = length(var.mint_principal_arns) > 0 ? [1] : []
+
+    content {
+      sid       = "DenyMintSignExceptDigestSha256"
+      effect    = "Deny"
+      actions   = ["kms:Sign"]
+      resources = ["*"]
+
+      principals {
+        type        = "AWS"
+        identifiers = ["*"]
+      }
+
+      condition {
+        test     = "ArnEquals"
+        variable = "aws:PrincipalArn"
+        values   = var.mint_principal_arns
+      }
+
+      condition {
+        test     = "StringNotEquals"
+        variable = "kms:SigningAlgorithm"
+        values   = ["RSASSA_PKCS1_V1_5_SHA_256"]
+      }
+    }
+  }
+
+  dynamic "statement" {
+    for_each = length(var.mint_principal_arns) > 0 ? [1] : []
+
+    content {
+      sid       = "DenyMintSignExceptDigest"
+      effect    = "Deny"
+      actions   = ["kms:Sign"]
+      resources = ["*"]
+
+      principals {
+        type        = "AWS"
+        identifiers = ["*"]
+      }
+
+      condition {
+        test     = "ArnEquals"
+        variable = "aws:PrincipalArn"
+        values   = var.mint_principal_arns
+      }
+
+      condition {
+        test     = "StringNotEquals"
+        variable = "kms:MessageType"
+        values   = ["DIGEST"]
+      }
+    }
+  }
+
   # The Denies match on aws:PrincipalArn rather than naming a principal, so
   # a role deleted and recreated under the same name and path is excepted
   # again. A Principal element would bind the deleted role's unique ID.
@@ -240,7 +320,7 @@ data "aws_iam_policy_document" "key_policy" {
     condition {
       test     = "ArnNotEquals"
       variable = "aws:PrincipalArn"
-      values   = [local.signer_role_arn]
+      values   = concat([local.signer_role_arn], var.mint_principal_arns)
     }
   }
 

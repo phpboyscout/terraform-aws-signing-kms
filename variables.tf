@@ -149,6 +149,20 @@ variable "automation_role_arn" {
   }
 }
 
+variable "mint_principal_arns" {
+  description = "IAM role ARNs exempted from DenySignExceptSigner so a human can mint the key's OpenPGP identity, whose self-signature needs kms:Sign. Each is granted Sign, GetPublicKey and DescribeKey, and denied Sign except for a DIGEST with RSASSA_PKCS1_V1_5_SHA_256, the one call the mint makes. Meant for one ceremony role whose trust admits a single person (infra spec 0032); RSA keys only."
+  type        = list(string)
+  default     = []
+  nullable    = false
+
+  validation {
+    condition = alltrue([
+      for arn in var.mint_principal_arns : can(regex("^arn:aws[^:]*:iam::[0-9]{12}:role/.+$", arn))
+    ])
+    error_message = "mint_principal_arns entries must be IAM role ARNs."
+  }
+}
+
 variable "tags" {
   description = "Tags to apply to every taggable resource. Merged with `Component = \"signing-kms\"` per the module-repo convention. Cross-cutting tags (Project, ManagedBy, Repository) come from the consuming stack's provider `default_tags`."
   type        = map(string)

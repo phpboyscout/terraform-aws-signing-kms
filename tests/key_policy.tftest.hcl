@@ -79,3 +79,76 @@ run "key_policy" {
     error_message = "KeyAdministrators must be an explicit list without Sign, GetPublicKey, PutKeyPolicy, CreateGrant or wildcards"
   }
 }
+
+run "no_mint_principal_by_default" {
+  command = apply
+
+  assert {
+    condition = length([
+      for s in jsondecode(data.aws_iam_policy_document.key_policy.json).Statement : s
+      if s.Sid == "MintSign"
+    ]) == 0
+    error_message = "MintSign must be absent when mint_principal_arns is empty"
+  }
+
+  assert {
+    condition = length([
+      for s in jsondecode(data.aws_iam_policy_document.key_policy.json).Statement : s
+      if startswith(s.Sid, "DenyMintSign")
+    ]) == 0
+    error_message = "the mint Denies must be absent when mint_principal_arns is empty"
+  }
+}
+
+run "mint_principal_may_sign" {
+  command = apply
+
+  variables {
+    mint_principal_arns = ["arn:aws:iam::111111111111:role/pbs-test-key-ceremony"]
+  }
+
+  assert {
+    condition = one([
+      for s in jsondecode(data.aws_iam_policy_document.key_policy.json).Statement : s
+      if s.Sid == "MintSign"
+      && s.Effect == "Allow"
+      && s.Principal.AWS == "arn:aws:iam::111111111111:role/pbs-test-key-ceremony"
+      && contains(s.Action, "kms:Sign")
+    ]) != null
+    error_message = "a mint principal must be allowed kms:Sign"
+  }
+
+  assert {
+    condition = one([
+      for s in jsondecode(data.aws_iam_policy_document.key_policy.json).Statement : s
+      if s.Sid == "DenySignExceptSigner"
+      && toset(s.Condition.ArnNotEquals["aws:PrincipalArn"]) == toset([
+        "arn:aws:iam::111111111111:role/test-signing-signer",
+        "arn:aws:iam::111111111111:role/pbs-test-key-ceremony",
+      ])
+    ]) != null
+    error_message = "the Sign Deny must except the signer role and the mint principal, and no one else"
+  }
+
+  assert {
+    condition = one([
+      for s in jsondecode(data.aws_iam_policy_document.key_policy.json).Statement : s
+      if s.Sid == "DenyMintSignExceptDigest"
+      && s.Effect == "Deny"
+      && s.Condition.ArnEquals["aws:PrincipalArn"] == "arn:aws:iam::111111111111:role/pbs-test-key-ceremony"
+      && s.Condition.StringNotEquals["kms:MessageType"] == "DIGEST"
+    ]) != null
+    error_message = "a mint principal must be denied Sign on anything but a DIGEST"
+  }
+
+  assert {
+    condition = one([
+      for s in jsondecode(data.aws_iam_policy_document.key_policy.json).Statement : s
+      if s.Sid == "DenyMintSignExceptDigestSha256"
+      && s.Effect == "Deny"
+      && s.Condition.ArnEquals["aws:PrincipalArn"] == "arn:aws:iam::111111111111:role/pbs-test-key-ceremony"
+      && s.Condition.StringNotEquals["kms:SigningAlgorithm"] == "RSASSA_PKCS1_V1_5_SHA_256"
+    ]) != null
+    error_message = "a mint principal must be denied Sign with any algorithm but RSASSA_PKCS1_V1_5_SHA_256"
+  }
+}
